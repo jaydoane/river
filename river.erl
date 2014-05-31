@@ -139,13 +139,13 @@ strip_directions(Line) ->
 eval_state({"", _R}) ->
     {done, ?SUCCESS};
 eval_state({L, R}) ->
-    case lists:any(fun(S) -> c_eats_g(S) end, [L, R]) of
+    case lists:any(fun(S) -> d_eats_c(S) end, [L, R]) of
         true ->
-            {done, ?GRAIN_EATEN};
+            {done, ?CHICKEN_EATEN};
         false ->
-            case lists:any(fun(S) -> d_eats_c(S) end, [L, R]) of
+            case lists:any(fun(S) -> c_eats_g(S) end, [L, R]) of
                 true ->
-                    {done, ?CHICKEN_EATEN};
+                    {done, ?GRAIN_EATEN};
                 false ->
                     ok
             end
