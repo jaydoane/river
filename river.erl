@@ -75,7 +75,7 @@ split(Line, Token) ->
                 E <- binary:split(list_to_binary(Line), [list_to_binary([Token])])],
     {L,R}.
 
-allowed_moves(L,R) ->
+valid_moves(L,R) ->
     case lists:member(?FARMER, L) of
         true ->
             [string:strip([?RIGHT, ?FARMER, P]) || P <- potential_passengers(L) ++ [$\s]];
@@ -116,7 +116,7 @@ eval_moves([Line|Lines], State) ->
     end.
 
 eval_move(Line, {L,R}) ->
-    case lists:member(lists:sort(Line), [lists:sort(M) || M <- allowed_moves(L,R)]) of
+    case lists:member(lists:sort(Line), [lists:sort(M) || M <- valid_moves(L,R)]) of
         true ->
             sort_each(
               case lists:member(?RIGHT, Line) of
@@ -170,7 +170,7 @@ river_test_() ->
      fun(_) -> ok end,
      [
       {spawn, ?_test(?debugVal(t_split()))} 
-      ,{spawn, ?_test(?debugVal(t_allowed_moves()))} 
+      ,{spawn, ?_test(?debugVal(t_valid_moves()))} 
       ,{spawn, ?_test(?debugVal(t_eval_state()))} 
       ,{spawn, ?_test(?debugVal(t_eval_move()))} 
       ,{spawn, ?_test(?debugVal(t_eval()))} 
@@ -193,10 +193,10 @@ t_eval_state() ->
     ?assertEqual({done, ?GRAIN_EATEN}, eval_state({"fd", "cg"})),
     ?assertEqual({done, ?CHICKEN_EATEN}, eval_state({"dc", "fg"})).
 
-t_allowed_moves() ->
-    ?assertEqual([">fc",">fg",">fd",">f"], allowed_moves("fcgd", "")),
-    ?assertEqual(["<fc","<f"], allowed_moves("gd", "fc")),
-    ?assertEqual([">f"], allowed_moves("f", "cgd")).
+t_valid_moves() ->
+    ?assertEqual([">fc",">fg",">fd",">f"], valid_moves("fcgd", "")),
+    ?assertEqual(["<fc","<f"], valid_moves("gd", "fc")),
+    ?assertEqual([">f"], valid_moves("f", "cgd")).
 
 t_split() ->
     ?assertEqual({"fdcg",[]}, split("fdcg~", ?RIVER)).
