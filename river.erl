@@ -51,7 +51,18 @@ sample(input,2) ->
      "fg>",
      "<f"];
 sample(output,2) ->
-    {"fd~cg","Grain was eaten."}.
+    {"fd~cg","Grain was eaten."};
+sample(input,3) ->
+    ["fdcg~",
+     "fc>",
+     "<f",
+     "fd>",
+     "<fc",
+     "fg>",
+     "<f",
+     "fc>"];
+sample(output,3) ->
+    {"~cdfg","Success!"}.
 
 
 format(L,R) ->
@@ -170,7 +181,8 @@ t_eval() ->
     {ExpectedState, ExpectedReason} = sample(output,2),
     {State, Reason} = eval(sample(input,2)),
     ?assertEqual(lists:sort(ExpectedState), lists:sort(State)),
-    ?assertEqual(ExpectedReason, Reason).
+    ?assertEqual(ExpectedReason, Reason),
+    ?assertEqual(sample(output,3), eval(sample(input,3))).
 
 t_eval_move() ->
     ?assertEqual({"",lists:sort("dgfc")}, eval_move("cf>", {"fc", "dg"})),
