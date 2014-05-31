@@ -33,10 +33,6 @@ Bonus parts:
 -define(LEFT, $<).
 -define(RIGHT, $>).
 
--define(GRAIN_EATEN, "Grain was eaten.").
--define(CHICKEN_EATEN, "Chicken was eaten.").
--define(SUCCESS, "Success!").
-
 sample(input,1) ->
     ["fdcg~",
      "fc>",
@@ -51,7 +47,7 @@ sample(input,2) ->
      "fg>",
      "<f"];
 sample(output,2) ->
-    {"fd~cg","Grain was eaten."};
+    {"fd~cg",grain_eaten};
 sample(input,3) ->
     ["fdcg~",
      "fc>",
@@ -62,7 +58,7 @@ sample(input,3) ->
      "<f",
      "fc>"];
 sample(output,3) ->
-    {"~cdfg","Success!"}.
+    {"~cdfg",success}.
 
 
 format(L,R) ->
@@ -108,10 +104,10 @@ eval_moves([Line|Lines], State) ->
             {State, {invalid_move, Line}};
         UpdatedState ->
             case eval_state(UpdatedState) of
-                {done, Reason} ->
-                    {UpdatedState, Reason};
                 ok ->
-                    eval_moves(Lines, UpdatedState)
+                    eval_moves(Lines, UpdatedState);
+                TerminationReason ->
+                    {UpdatedState, TerminationReason}
             end
     end.
 
@@ -137,15 +133,15 @@ strip_directions(Line) ->
                 
 
 eval_state({"", _R}) ->
-    {done, ?SUCCESS};
+    success;
 eval_state({L, R}) ->
     case lists:any(fun(S) -> chicken_eaten(S) end, [L, R]) of
         true ->
-            {done, ?CHICKEN_EATEN};
+            chicken_eaten;
         false ->
             case lists:any(fun(S) -> grain_eaten(S) end, [L, R]) of
                 true ->
-                    {done, ?GRAIN_EATEN};
+                    grain_eaten;
                 false ->
                     ok
             end
@@ -189,9 +185,10 @@ t_eval_move() ->
     ?assertEqual({invalid_move, "cf<"}, eval_move("cf<", {"fc", "dg"})).
 
 t_eval_state() ->
-    ?assertEqual({done, ?SUCCESS}, eval_state({"", "fdcg"})),
-    ?assertEqual({done, ?GRAIN_EATEN}, eval_state({"fd", "cg"})),
-    ?assertEqual({done, ?CHICKEN_EATEN}, eval_state({"dc", "fg"})).
+    ?assertEqual(ok, eval_state({"cgfd", ""})),
+    ?assertEqual(success, eval_state({"", "fdcg"})),
+    ?assertEqual(grain_eaten, eval_state({"fd", "cg"})),
+    ?assertEqual(chicken_eaten, eval_state({"dc", "fg"})).
 
 t_valid_moves() ->
     ?assertEqual([">fc",">fg",">fd",">f"], valid_moves("fcgd", "")),
