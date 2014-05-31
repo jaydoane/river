@@ -139,11 +139,11 @@ strip_directions(Line) ->
 eval_state({"", _R}) ->
     {done, ?SUCCESS};
 eval_state({L, R}) ->
-    case lists:any(fun(S) -> d_eats_c(S) end, [L, R]) of
+    case lists:any(fun(S) -> chicken_eaten(S) end, [L, R]) of
         true ->
             {done, ?CHICKEN_EATEN};
         false ->
-            case lists:any(fun(S) -> c_eats_g(S) end, [L, R]) of
+            case lists:any(fun(S) -> grain_eaten(S) end, [L, R]) of
                 true ->
                     {done, ?GRAIN_EATEN};
                 false ->
@@ -151,10 +151,10 @@ eval_state({L, R}) ->
             end
     end.
 
-c_eats_g(S) ->
+grain_eaten(S) ->
     contains(?CHICKEN, S) andalso contains(?GRAIN, S) andalso not contains(?FARMER, S).
 
-d_eats_c(S) ->
+chicken_eaten(S) ->
     contains(?DOG, S) andalso contains(?CHICKEN, S) andalso not contains(?FARMER, S).
 
 contains(Char, Str) ->
