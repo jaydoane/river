@@ -54,16 +54,17 @@ sample(output,2) ->
     {"fd~cg","Grain was eaten."}.
 
 
-format([L,R]) ->
+format(L,R) ->
     lists:flatten(L ++ [?RIVER] ++ R).
 
+%% @doc Return the state as a 2-tuple splitting Line on Token
 split(Line, Token) ->
     %% because string:tokens/2 doesn't return empty lists
-    Parts = binary:split(list_to_binary(Line), [list_to_binary([Token])]),
-    [binary_to_list(P) || P <- Parts].
-    
+    [L,R] = [binary_to_list(E) ||
+                E <- binary:split(list_to_binary(Line), [list_to_binary([Token])])],
+    {L,R}.
 
-allowed_moves([L,R]) ->
+allowed_moves(L,R) ->
     case lists:member(?FARMER, L) of
         true ->
             [string:strip([?RIGHT, ?FARMER, P]) || P <- potential_passengers(L) ++ [$\s]];
@@ -75,23 +76,22 @@ potential_passengers(Shore) ->
     lists:flatten(string:tokens(Shore, [?FARMER])).
 
 
-%% solve([L,R] = State, Tree) ->
-%%     case allowed_moves(State) of
-        
+solve({L,R}, SearchPath, DeadEnds) ->
+    %% case allowed_moves(L,R) of
+    {{L,R}, SearchPath, DeadEnds}.
+
 
 eval([Line|Lines]) ->
-    %% for now, assume initial state is both valid, and not the success state
-    InitialState = [_L, _R] = split(Line, ?RIVER),
-    case eval_moves(Lines, InitialState) of
-        [L,R] ->
-            format([L,R]);
-        {[L,R], Reason}  ->
-            {format([L,R]), Reason}
+    case eval_moves(Lines, split(Line, ?RIVER)) of
+        {{L,R}, Reason}  ->
+            {format(L,R), Reason};
+        {L,R} ->
+            format(L,R)
     end.
             
 eval_moves([], State) ->
     State;
-eval_moves([Line|Lines], [_L, _R] = State) ->
+eval_moves([Line|Lines], State) ->
     case eval_move(Line, State) of
         {invalid_move, Line} ->
             {State, {invalid_move, Line}};
@@ -104,26 +104,30 @@ eval_moves([Line|Lines], [_L, _R] = State) ->
             end
     end.
 
-eval_move(Line, [L,R] = State) ->
-    case lists:member(lists:sort(Line), [lists:sort(M) || M <- allowed_moves(State)]) of
+eval_move(Line, {L,R}) ->
+    case lists:member(lists:sort(Line), [lists:sort(M) || M <- allowed_moves(L,R)]) of
         true ->
-            case lists:member(?RIGHT, Line) of
-                true ->
-                    [lists:sort(E) || E <- [L -- Line, R ++ strip_directions(Line)]];
+            sort_each(
+              case lists:member(?RIGHT, Line) of
+                  true ->
+                      {L -- Line, R ++ strip_directions(Line)};
                 false ->
-                    [lists:sort(E) || E <- [L ++ strip_directions(Line), R -- Line]]
-            end;
+                      {L ++ strip_directions(Line), R -- Line}
+              end);
         false ->
             {invalid_move, Line}
     end.
+
+sort_each({L,R}) ->
+    {lists:sort(L), lists:sort(R)}.
 
 strip_directions(Line) ->
     lists:flatten(string:tokens(Line, [?LEFT, ?RIGHT])).
                 
 
-eval_state(["", _R]=_State) ->
+eval_state({"", _R}) ->
     {done, ?SUCCESS};
-eval_state([L, R]=_State) ->
+eval_state({L, R}) ->
     case lists:any(fun(S) -> c_eats_g(S) end, [L, R]) of
         true ->
             {done, ?GRAIN_EATEN};
@@ -169,20 +173,20 @@ t_eval() ->
     ?assertEqual(ExpectedReason, Reason).
 
 t_eval_move() ->
-    ?assertEqual([[],lists:sort("dgfc")], eval_move("cf>", ["fc", "dg"])),
-    ?assertEqual({invalid_move, "cf<"}, eval_move("cf<", ["fc", "dg"])).
+    ?assertEqual({"",lists:sort("dgfc")}, eval_move("cf>", {"fc", "dg"})),
+    ?assertEqual({invalid_move, "cf<"}, eval_move("cf<", {"fc", "dg"})).
 
 t_eval_state() ->
-    ?assertEqual({done, ?SUCCESS}, eval_state(["", "fdcg"])),
-    ?assertEqual({done, ?GRAIN_EATEN}, eval_state(["fd", "cg"])),
-    ?assertEqual({done, ?CHICKEN_EATEN}, eval_state(["dc", "fg"])).
+    ?assertEqual({done, ?SUCCESS}, eval_state({"", "fdcg"})),
+    ?assertEqual({done, ?GRAIN_EATEN}, eval_state({"fd", "cg"})),
+    ?assertEqual({done, ?CHICKEN_EATEN}, eval_state({"dc", "fg"})).
 
 t_allowed_moves() ->
-    ?assertEqual([">fc",">fg",">fd",">f"], allowed_moves(["fcgd", ""])),
-    ?assertEqual(["<fc","<f"], allowed_moves(["gd", "fc"])),
-    ?assertEqual([">f"], allowed_moves(["f", "cgd"])).
+    ?assertEqual([">fc",">fg",">fd",">f"], allowed_moves("fcgd", "")),
+    ?assertEqual(["<fc","<f"], allowed_moves("gd", "fc")),
+    ?assertEqual([">f"], allowed_moves("f", "cgd")).
 
 t_split() ->
-    ?assertEqual(["fdcg",[]], split("fdcg~", ?RIVER)).
+    ?assertEqual({"fdcg",[]}, split("fdcg~", ?RIVER)).
 
 %%-endif.
