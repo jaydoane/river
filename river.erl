@@ -60,6 +60,8 @@ sample(input,3) ->
 sample(output,3) ->
     {"~cdfg",success}.
 
+format({L,R}) ->
+    format(L,R).
 
 format(L,R) ->
     lists:flatten(L ++ [?RIVER] ++ R).
@@ -86,7 +88,8 @@ potential_passengers(Shore) ->
 -define(MAXIMUM_SOLUTION_LENGTH, 7).
 
 solve({L,R}) ->
-    solve(sort_each({L,R}), []).
+    %% untuplize solutions
+    [[format(S) || S <- Solution] || {Solution} <- lists:flatten(solve(sort_each({L,R}), []))].
 
 solve({L,R}=State, PreviousStates) when length(PreviousStates) =< ?MAXIMUM_SOLUTION_LENGTH ->
     NextPreviousStates = [State|PreviousStates],
@@ -97,12 +100,13 @@ solve({L,R}=State, PreviousStates) when length(PreviousStates) =< ?MAXIMUM_SOLUT
                            (_) ->
                                 false
                         end, StateEvals),
-    Successes = [{S,Eval} || {S,Eval} <- Terminals, Eval =:= success],
+    Successes = [S || {S,success} <- Terminals],
     case Successes of
         [] ->
             [solve(S, NextPreviousStates) || {S,ok} <- NonTerminals];
         _ ->
-            [lists:reverse([Success|NextPreviousStates]) || Success <- Successes]
+            %% embed solution in tuple to survive flattening
+            [{lists:reverse([Success|NextPreviousStates])} || Success <- Successes]
     end.
 
 
