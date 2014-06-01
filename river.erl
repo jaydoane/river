@@ -83,9 +83,27 @@ potential_passengers(Shore) ->
     lists:flatten(string:tokens(Shore, [?FARMER])).
 
 
-solve({L,R}, SearchPath, DeadEnds) ->
-    %% case allowed_moves(L,R) of
-    {{L,R}, SearchPath, DeadEnds}.
+-define(MAXIMUM_SOLUTION_LENGTH, 7).
+
+solve({L,R}) ->
+    solve(sort_each({L,R}), []).
+
+solve({L,R}=State, PreviousStates) when length(PreviousStates) =< ?MAXIMUM_SOLUTION_LENGTH ->
+    NextPreviousStates = [State|PreviousStates],
+    StateEvals = [{S, eval_state(S)} || S <- [eval_move(M, State) || M <- valid_moves(L,R)]],
+    {NonTerminals, Terminals} =
+        lists:partition(fun({S, ok}) ->
+                                not lists:member(S, PreviousStates);
+                           (_) ->
+                                false
+                        end, StateEvals),
+    Successes = [{S,Eval} || {S,Eval} <- Terminals, Eval =:= success],
+    case Successes of
+        [] ->
+            [solve(S, NextPreviousStates) || {S,ok} <- NonTerminals];
+        _ ->
+            [lists:reverse([Success|NextPreviousStates]) || Success <- Successes]
+    end.
 
 
 eval([Line|Lines]) ->
