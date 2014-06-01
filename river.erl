@@ -192,7 +192,14 @@ river_test_() ->
       ,{spawn, ?_test(?debugVal(t_eval_state()))} 
       ,{spawn, ?_test(?debugVal(t_eval_move()))} 
       ,{spawn, ?_test(?debugVal(t_eval()))} 
+      ,{spawn, ?_test(?debugVal(t_solve()))} 
      ]}.
+
+t_solve() ->
+    ?assertEqual(
+       [["cdfg~","dg~cf","dfg~c","g~cdf","cfg~d","c~dfg","cf~dg", "~cdfg"],
+        ["cdfg~","dg~cf","dfg~c","d~cfg","cdf~g","c~dfg","cf~dg", "~cdfg"]],
+       solve(split("cdfg~", ?RIVER))).
 
 t_eval() ->
     ?assertEqual(lists:sort(sample(output,1)), lists:sort(eval(sample(input,1)))),
